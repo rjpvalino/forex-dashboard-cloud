@@ -49,9 +49,14 @@ def refresh_data():
                     pairs_data.append(oanda.get_pair_data(instrument))
                 except Exception as e:
                     logger.error(f"Error fetching {instrument}: {e}")
+            if not pairs_data:
+                error_msg = "OANDA returned no data (check API key) — showing demo data."
+                logger.warning(error_msg)
+                pairs_data = _demo_pairs()
         except Exception as e:
-            error_msg = f"OANDA connection error: {e}"
+            error_msg = f"OANDA connection error: {e} — showing demo data."
             logger.error(error_msg)
+            pairs_data = _demo_pairs()
     else:
         error_msg = "OANDA credentials not configured — showing demo data. Set OANDA_API_KEY and OANDA_ACCOUNT_ID in .env for live prices."
         pairs_data = _demo_pairs()
