@@ -1,10 +1,16 @@
 import requests
-from bs4 import BeautifulSoup
 from datetime import datetime
 import logging
-import time
 
 logger = logging.getLogger(__name__)
+
+# ForexFactory publishes a machine-readable JSON feed via their CDN.
+# Unlike the HTML calendar page (which Cloudflare blocks from datacenter IPs),
+# these CDN endpoints are accessible from server environments.
+CDN_URLS = {
+    'this': 'https://cdn-nfs.faireconomy.media/ff_calendar_thisweek.json',
+    'next': 'https://cdn-nfs.faireconomy.media/ff_calendar_nextweek.json',
+}
 
 HEADERS = {
     'User-Agent': (
@@ -12,110 +18,57 @@ HEADERS = {
         'AppleWebKit/537.36 (KHTML, like Gecko) '
         'Chrome/124.0.0.0 Safari/537.36'
     ),
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept': 'application/json, */*',
     'Referer': 'https://www.forexfactory.com/',
 }
 
+HIGH_IMPACT = {'High', 'Holiday'}
+
 
 class ForexFactoryClient:
-    BASE_URL = 'https://www.forexfactory.com/calendar'
 
     def get_calendar_events(self):
         events = []
-        for week in ('this', 'next'):
+        for week, url in CDN_URLS.items():
             try:
-                url = f'{self.BASE_URL}?week={week}'
                 resp = requests.get(url, headers=HEADERS, timeout=20)
                 resp.raise_for_status()
-                events.extend(self._parse(resp.text))
-                time.sleep(1.5)
+                raw = resp.json()
+                events.extend(self._parse(raw))
+                logger.info(f'ForexFactory JSON: {len(raw)} events fetched ({week} week)')
             except Exception as e:
                 logger.error(f'ForexFactory fetch failed ({week} week): {e}')
         return events
 
-    def _parse(self, html):
-        soup = BeautifulSoup(html, 'lxml')
-        table = soup.find('table', class_='calendar__table')
-        if not table:
-            logger.warning('ForexFactory calendar table not found — site structure may have changed')
-            return []
-
+    def _parse(self, raw_events):
         events = []
-        current_date = None
-
-        for row in table.find_all('tr', class_=lambda c: c and 'calendar__row' in c):
-            # Update running date
-            date_cell = row.find('td', class_='calendar__date')
-            if date_cell:
-                raw = date_cell.get_text(strip=True)
-                if raw:
-                    parsed = self._parse_date(raw)
-                    if parsed:
-                        current_date = parsed
-
-            impact = self._impact(row)
-            if impact not in ('High', 'Holiday', 'Speech'):
+        for e in raw_events:
+            impact = e.get('impact', '')
+            if impact not in HIGH_IMPACT and 'speak' not in impact.lower():
                 continue
 
-            currency = self._text(row, 'calendar__currency')
-            event_name = self._event_name(row)
-            if not currency or not event_name:
-                continue
+            normalized_impact = impact
+            if 'speak' in impact.lower():
+                normalized_impact = 'Speech'
+
+            date_str = self._parse_date(e.get('date', ''))
 
             events.append({
-                'date': current_date.strftime('%Y-%m-%d') if current_date else '',
-                'time': self._text(row, 'calendar__time'),
-                'currency': currency,
-                'event': event_name,
-                'impact': impact,
-                'actual': self._text(row, 'calendar__actual'),
-                'forecast': self._text(row, 'calendar__forecast'),
-                'previous': self._text(row, 'calendar__previous'),
+                'date':     date_str,
+                'time':     e.get('time', ''),
+                'currency': e.get('country', ''),
+                'event':    e.get('title', ''),
+                'impact':   normalized_impact,
+                'actual':   e.get('actual', ''),
+                'forecast': e.get('forecast', ''),
+                'previous': e.get('previous', ''),
             })
-
         return events
 
-    def _impact(self, row):
-        cell = row.find('td', class_='calendar__impact')
-        if not cell:
-            return None
-        span = cell.find('span')
-        if not span:
-            return None
-        classes = ' '.join(span.get('class', []))
-        if 'red' in classes:
-            return 'High'
-        if 'orange' in classes:
-            return 'Medium'
-        if 'yellow' in classes:
-            return 'Low'
-        if 'gray' in classes or 'grey' in classes:
-            return 'Holiday'
-        if 'speak' in classes or 'speech' in classes:
-            return 'Speech'
-        return None
-
-    def _event_name(self, row):
-        cell = row.find('td', class_='calendar__event')
-        if not cell:
-            return ''
-        span = cell.find('span', class_='calendar__event-title')
-        return span.get_text(strip=True) if span else cell.get_text(strip=True)
-
-    def _text(self, row, cls):
-        cell = row.find('td', class_=cls)
-        return cell.get_text(strip=True) if cell else ''
-
     def _parse_date(self, raw):
-        year = datetime.now().year
-        parts = raw.strip().split()
-        # Formats: "Mon Jun 23" or "Jun 23"
-        try:
-            if len(parts) >= 3:
-                return datetime.strptime(f'{parts[1]} {parts[2]} {year}', '%b %d %Y')
-            if len(parts) == 2:
-                return datetime.strptime(f'{parts[0]} {parts[1]} {year}', '%b %d %Y')
-        except ValueError:
-            pass
-        return None
+        for fmt in ('%m-%d-%Y', '%Y-%m-%d', '%b %d %Y', '%B %d %Y'):
+            try:
+                return datetime.strptime(raw.strip(), fmt).strftime('%Y-%m-%d')
+            except ValueError:
+                continue
+        return raw
