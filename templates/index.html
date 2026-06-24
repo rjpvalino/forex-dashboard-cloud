@@ -74,12 +74,53 @@
         </div>
       </div>
       <div class="fg">
+        <span class="flbl">STRENGTH</span>
+        <div class="pills">
+          <button class="pill active" onclick="setFilter('strength','all',this)">ALL</button>
+          <button class="pill p-str" onclick="setFilter('strength','strong',this)">⚡ STRONG</button>
+          <button class="pill p-mod" onclick="setFilter('strength','moderate',this)">◈ MODERATE</button>
+          <button class="pill p-wk" onclick="setFilter('strength','weak',this)">· WEAK</button>
+        </div>
+      </div>
+      <div class="fg">
         <span class="flbl">ALIGNMENT</span>
         <div class="pills">
           <button class="pill active" onclick="setFilter('agreement','all',this)">ALL</button>
           <button class="pill p-pri" onclick="setFilter('agreement','yes',this)">✓ CONFIRMED</button>
           <button class="pill" onclick="setFilter('agreement','partial',this)">~ PARTIAL</button>
           <button class="pill p-dn" onclick="setFilter('agreement','no',this)">✗ CONFLICT</button>
+        </div>
+      </div>
+      <div class="fg">
+        <span class="flbl">CURRENCY</span>
+        <div class="pills">
+          <button class="pill active" onclick="setFilter('currency','all',this)">ALL</button>
+          <button class="pill" onclick="setFilter('currency','usd',this)">USD</button>
+          <button class="pill" onclick="setFilter('currency','eur',this)">EUR</button>
+          <button class="pill" onclick="setFilter('currency','gbp',this)">GBP</button>
+          <button class="pill" onclick="setFilter('currency','jpy',this)">JPY</button>
+          <button class="pill" onclick="setFilter('currency','aud',this)">AUD</button>
+          <button class="pill" onclick="setFilter('currency','cad',this)">CAD</button>
+          <button class="pill" onclick="setFilter('currency','chf',this)">CHF</button>
+          <button class="pill" onclick="setFilter('currency','nzd',this)">NZD</button>
+        </div>
+      </div>
+      <div class="fg">
+        <span class="flbl">TODAY</span>
+        <div class="pills">
+          <button class="pill active" onclick="setFilter('change','all',this)">ALL</button>
+          <button class="pill p-up" onclick="setFilter('change','gaining',this)">↑ GAINING</button>
+          <button class="pill p-dn" onclick="setFilter('change','losing',this)">↓ LOSING</button>
+        </div>
+      </div>
+      <div class="fg">
+        <span class="flbl">NEWS</span>
+        <div class="pills">
+          <button class="pill active" onclick="setFilter('news','all',this)">ALL</button>
+          <button class="pill p-up" onclick="setFilter('news','bullish',this)">↑ BULLISH</button>
+          <button class="pill p-dn" onclick="setFilter('news','bearish',this)">↓ BEARISH</button>
+          <button class="pill p-rng" onclick="setFilter('news','mixed',this)">~ MIXED</button>
+          <button class="pill p-pri" onclick="setFilter('news','hasnews',this)">⚑ HAS NEWS</button>
         </div>
       </div>
     </section>

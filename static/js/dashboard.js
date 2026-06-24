@@ -1,6 +1,6 @@
 'use strict';
 
-const filters = { type: 'all', trend: 'all', agreement: 'all' };
+const filters = { type: 'all', trend: 'all', agreement: 'all', strength: 'all', currency: 'all', change: 'all', news: 'all' };
 let _data = null;
 const CURRENCY_ORDER = ['USD','EUR','GBP','JPY','AUD','CAD','CHF','NZD'];
 
@@ -66,12 +66,17 @@ function renderTable(type, pairs, newsData) {
 
 function makeRow(p, newsData) {
   const tr = document.createElement('tr');
-  tr.dataset.type     = p.display;
+  tr.dataset.type        = p.display;
   tr.dataset.dailyTrend  = trendKey(p.daily_trend);
   tr.dataset.weeklyTrend = trendKey(p.weekly_trend);
   tr.dataset.agreement   = (p.agreement || 'No').toLowerCase();
+  tr.dataset.strength    = (p.daily_strength || 'none').toLowerCase();
+  tr.dataset.base        = (p.base  || '').toLowerCase();
+  tr.dataset.quote       = (p.quote || '').toLowerCase();
+  tr.dataset.change      = p.daily_change > 0.005 ? 'gaining' : p.daily_change < -0.005 ? 'losing' : 'flat';
 
   const newsImpact = getNewsImpact(p.base, p.quote, newsData);
+  tr.dataset.newsImpact  = (newsImpact || 'none').toLowerCase();
 
   tr.innerHTML = `
     <td><span class="pair-name">${p.display}</span></td>
@@ -255,16 +260,22 @@ function setFilter(key, val, el) {
 
 function applyFilters() {
   if (!_data) return;
-  const { type, trend, agreement } = filters;
+  const { type, trend, agreement, strength, currency, change, news } = filters;
 
   let shown = 0;
   document.querySelectorAll('.ptbl tbody tr').forEach(tr => {
     const isMajor = (_data.major_pairs || []).includes(tr.dataset.type);
     const isMinor = (_data.minor_pairs || []).includes(tr.dataset.type);
-    const passType = type === 'all' || (type === 'major' && isMajor) || (type === 'minor' && isMinor);
-    const passTrend = trend === 'all' || tr.dataset.dailyTrend === trend;
-    const passAgr = agreement === 'all' || tr.dataset.agreement === agreement;
-    const hide = !(passType && passTrend && passAgr);
+    const passType     = type === 'all' || (type === 'major' && isMajor) || (type === 'minor' && isMinor);
+    const passTrend    = trend === 'all' || tr.dataset.dailyTrend === trend;
+    const passAgr      = agreement === 'all' || tr.dataset.agreement === agreement;
+    const passStrength = strength === 'all' || tr.dataset.strength === strength;
+    const passCurrency = currency === 'all' || tr.dataset.base === currency || tr.dataset.quote === currency;
+    const passChange   = change === 'all' || tr.dataset.change === change;
+    const passNews     = news === 'all'
+      || (news === 'hasnews' && tr.dataset.newsImpact !== 'none')
+      || tr.dataset.newsImpact === news;
+    const hide = !(passType && passTrend && passAgr && passStrength && passCurrency && passChange && passNews);
     tr.classList.toggle('filtered-out', hide);
     if (!hide) shown++;
   });
