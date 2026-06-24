@@ -15,10 +15,8 @@ class OandaClient:
 
     def get_pair_data(self, instrument):
         mid, bid, ask = self._get_price(instrument)
-        # 50 daily candles  → enough history for 21 EMA + 14 ATR + 5-bar slope
-        # 52 weekly candles → 1 year of context so slow EMA captures full range cycles
-        daily_candles  = self._get_candles(instrument, 'D', 50)
-        weekly_candles = self._get_candles(instrument, 'W', 52)
+        daily_candles  = self._get_candles(instrument, 'D', 100)
+        weekly_candles = self._get_candles(instrument, 'W', 60)
 
         daily  = _analyzer.analyze_full(daily_candles)
         weekly = _analyzer.analyze_full(weekly_candles)
@@ -62,7 +60,7 @@ class OandaClient:
             params={"count": count, "granularity": granularity, "price": "M"}
         )
         self.api.request(r)
-        return r.response['candles']
+        return [c for c in r.response['candles'] if c.get('complete', True)]
 
     def _agreement(self, daily, weekly):
         if daily == weekly and daily != 'Ranging':
