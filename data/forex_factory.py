@@ -8,8 +8,8 @@ logger = logging.getLogger(__name__)
 # Unlike the HTML calendar page (which Cloudflare blocks from datacenter IPs),
 # these CDN endpoints are accessible from server environments.
 CDN_URLS = {
-    'this': 'https://cdn-nfs.faireconomy.media/ff_calendar_thisweek.json',
-    'next': 'https://cdn-nfs.faireconomy.media/ff_calendar_nextweek.json',
+    'this': 'https://nfs.faireconomy.media/ff_calendar_thisweek.json',
+    'next': 'https://nfs.faireconomy.media/ff_calendar_nextweek.json',
 }
 
 HEADERS = {
@@ -51,11 +51,13 @@ class ForexFactoryClient:
             if 'speak' in impact.lower():
                 normalized_impact = 'Speech'
 
-            date_str = self._parse_date(e.get('date', ''))
+            # The JSON date field is ISO 8601 with timezone offset,
+            # e.g. "2026-06-21T21:00:00-04:00" — no separate time field exists.
+            date_str, time_str = self._parse_datetime(e.get('date', ''))
 
             events.append({
                 'date':     date_str,
-                'time':     e.get('time', ''),
+                'time':     time_str,
                 'currency': e.get('country', ''),
                 'event':    e.get('title', ''),
                 'impact':   normalized_impact,
@@ -65,10 +67,22 @@ class ForexFactoryClient:
             })
         return events
 
-    def _parse_date(self, raw):
-        for fmt in ('%m-%d-%Y', '%Y-%m-%d', '%b %d %Y', '%B %d %Y'):
-            try:
-                return datetime.strptime(raw.strip(), fmt).strftime('%Y-%m-%d')
-            except ValueError:
-                continue
-        return raw
+    def _parse_datetime(self, raw):
+        """Parse ISO 8601 datetime string into (date_str, time_str).
+
+        The CDN feed uses format: "2026-06-21T21:00:00-04:00"
+        Python 3.11+ fromisoformat handles timezone offsets natively.
+        """
+        if not raw:
+            return '', ''
+        try:
+            dt = datetime.fromisoformat(raw)
+            date_str = dt.strftime('%Y-%m-%d')
+            h = dt.hour % 12 or 12
+            time_str = f"{h}:{dt.minute:02d}{'am' if dt.hour < 12 else 'pm'}"
+            return date_str, time_str
+        except (ValueError, TypeError):
+            # Fallback: at minimum extract the date portion
+            if 'T' in raw:
+                return raw.split('T')[0], ''
+            return raw, ''

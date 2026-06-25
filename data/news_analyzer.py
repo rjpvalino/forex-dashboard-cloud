@@ -43,20 +43,31 @@ class NewsAnalyzer:
         if impact == 'Speech':
             return 'Watch'
 
-        actual = self._parse_num(event.get('actual', ''))
+        actual   = self._parse_num(event.get('actual', ''))
         forecast = self._parse_num(event.get('forecast', ''))
-
-        if actual is None or forecast is None:
-            return 'Pending'
+        previous = self._parse_num(event.get('previous', ''))
 
         name = event.get('event', '').lower()
         is_inverse = any(kw in name for kw in INVERSE_METRICS)
 
-        if actual > forecast:
-            return 'Bearish' if is_inverse else 'Bullish'
-        if actual < forecast:
-            return 'Bullish' if is_inverse else 'Bearish'
-        return 'Neutral'
+        # Post-release: actual vs forecast is the confirmed signal
+        if actual is not None and forecast is not None:
+            if actual > forecast:
+                return 'Bearish' if is_inverse else 'Bullish'
+            if actual < forecast:
+                return 'Bullish' if is_inverse else 'Bearish'
+            return 'Neutral'
+
+        # Pre-release: forecast vs previous gives expected directional bias
+        # (the CDN feed is forward-looking and often has no actual values)
+        if forecast is not None and previous is not None:
+            if forecast > previous:
+                return 'Bearish' if is_inverse else 'Bullish'
+            if forecast < previous:
+                return 'Bullish' if is_inverse else 'Bearish'
+            return 'Neutral'  # no change expected
+
+        return 'Pending'
 
     def _parse_num(self, raw):
         if not raw or raw.strip() in ('', '-', 'N/A'):
