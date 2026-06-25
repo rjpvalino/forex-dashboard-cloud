@@ -131,8 +131,11 @@ function trendKey(trend) {
 
 function getNewsImpact(base, quote, newsData) {
   if (!newsData) return null;
-  const baseBias  = newsData[base]?.bias;
-  const quoteBias = newsData[quote]?.bias;
+  const rawBase  = newsData[base]?.bias;
+  const rawQuote = newsData[quote]?.bias;
+  // Neutral means no directional signal — treat same as no news for that currency
+  const baseBias  = (rawBase  === 'Neutral') ? null : rawBase;
+  const quoteBias = (rawQuote === 'Neutral') ? null : rawQuote;
   if (!baseBias && !quoteBias) return null;
   if (baseBias === 'Bullish' && quoteBias !== 'Bullish') return 'Bullish';
   if (baseBias === 'Bearish' && quoteBias !== 'Bearish') return 'Bearish';
@@ -200,7 +203,8 @@ function biasBadge(bias, cur) {
   const map = {
     'Bullish': `<div class="news-bias nb-bull">↑ ${cur} OVERALL BIAS: BULLISH — Price likely to rise</div>`,
     'Bearish': `<div class="news-bias nb-bear">↓ ${cur} OVERALL BIAS: BEARISH — Price likely to fall</div>`,
-    'Mixed':   `<div class="news-bias nb-mix">~ ${cur} OVERALL BIAS: MIXED SIGNALS</div>`
+    'Mixed':   `<div class="news-bias nb-mix">~ ${cur} OVERALL BIAS: MIXED SIGNALS</div>`,
+    'Neutral': `<div class="news-bias nb-neu">→ ${cur} OVERALL BIAS: NEUTRAL — No directional data yet</div>`,
   };
   return map[bias] || '';
 }

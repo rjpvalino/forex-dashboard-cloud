@@ -5,6 +5,7 @@ logger = logging.getLogger(__name__)
 # Metrics where a higher-than-expected value is BEARISH for that currency
 INVERSE_METRICS = frozenset([
     'unemployment', 'jobless claims', 'initial claims', 'continuing claims',
+    'claimant count',
     'deficit', 'trade deficit', 'current account deficit'
 ])
 
@@ -27,6 +28,8 @@ class NewsAnalyzer:
                 bias = 'Bullish'
             elif bearish > bullish:
                 bias = 'Bearish'
+            elif bullish == 0 and bearish == 0:
+                bias = 'Neutral'  # only speeches, pending releases, or as-expected data
             else:
                 bias = 'Mixed'
             by_currency[currency] = {'events': evts, 'bias': bias}
