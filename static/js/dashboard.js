@@ -22,7 +22,8 @@ async function fetchData() {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   _data = await res.json();
 
-  if (_data.error) showError(_data.error);
+  const errs = [_data.error, _data.news_error].filter(Boolean);
+  if (errs.length) showError(errs.join('  |  '));
   else hideError();
 
   renderAll(_data);

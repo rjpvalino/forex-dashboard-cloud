@@ -12,6 +12,7 @@ load_dotenv()
 
 from data.oanda_client import OandaClient
 from data.forex_factory import ForexFactoryClient
+from data.finnhub_client import FinnhubCalendarClient
 from data.news_analyzer import NewsAnalyzer
 
 app = Flask(__name__)
@@ -26,7 +27,7 @@ MINOR_PAIRS = [
     'CAD_JPY', 'CAD_CHF', 'NZD_JPY', 'NZD_CAD', 'NZD_CHF', 'CHF_JPY'
 ]
 
-_cache = {'pairs': [], 'news': {}, 'last_updated': None, 'error': None}
+_cache = {'pairs': [], 'news': {}, 'last_updated': None, 'error': None, 'news_error': None}
 
 
 def refresh_data():
@@ -61,20 +62,43 @@ def refresh_data():
         logger.warning(error_msg)
 
     news = {}
-    try:
-        events = ForexFactoryClient().get_calendar_events()
-        news = NewsAnalyzer().analyze(events)
-    except Exception as e:
-        logger.error(f"Error fetching ForexFactory news: {e}")
+    news_error = None
+    analyzer = NewsAnalyzer()
 
+    # 1. Try Finnhub (cloud-friendly API, provides actual values after release)
+    finnhub_key = os.getenv('FINNHUB_API_KEY')
+    if finnhub_key:
+        try:
+            events = FinnhubCalendarClient(finnhub_key).get_calendar_events()
+            if events:
+                news = analyzer.analyze(events)
+        except Exception as e:
+            logger.error(f"Finnhub error: {e}")
+
+    # 2. Fall back to ForexFactory CDN
+    if not news:
+        try:
+            events = ForexFactoryClient().get_calendar_events()
+            if events:
+                news = analyzer.analyze(events)
+        except Exception as e:
+            logger.error(f"ForexFactory error: {e}")
+
+    # 3. Final fallback: demo data with visible warning
     if not news:
         news = _demo_news()
+        news_error = (
+            "Live news unavailable — showing sample data. "
+            "Add FINNHUB_API_KEY to Render environment variables to enable real-time news."
+        )
+        logger.warning(news_error)
 
     _cache.update({
         'pairs': pairs_data,
         'news': news,
         'last_updated': datetime.now(pytz.UTC).isoformat(),
-        'error': error_msg
+        'error': error_msg,
+        'news_error': news_error,
     })
     logger.info(f"Refresh complete — {len(pairs_data)} pairs, {sum(len(v.get('events', [])) for v in news.values())} news events")
 
@@ -93,6 +117,7 @@ def get_data():
         'news': _cache['news'],
         'last_updated': _cache['last_updated'],
         'error': _cache['error'],
+        'news_error': _cache.get('news_error'),
         'major_pairs': [p.replace('_', '/') for p in MAJOR_PAIRS],
         'minor_pairs': [p.replace('_', '/') for p in MINOR_PAIRS]
     })
