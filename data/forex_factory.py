@@ -22,7 +22,7 @@ HEADERS = {
     'Referer': 'https://www.forexfactory.com/',
 }
 
-HIGH_IMPACT = {'High', 'Holiday'}
+HIGH_IMPACT = {'High', 'Medium', 'Holiday'}
 
 
 class ForexFactoryClient:

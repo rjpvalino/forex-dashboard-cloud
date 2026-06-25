@@ -200,10 +200,10 @@ function switchTab(cur) {
 
 function biasBadge(bias, cur) {
   const map = {
-    'Bullish': `<div class="news-bias nb-bull">↑ ${cur} OVERALL BIAS: BULLISH — Price likely to rise</div>`,
-    'Bearish': `<div class="news-bias nb-bear">↓ ${cur} OVERALL BIAS: BEARISH — Price likely to fall</div>`,
+    'Bullish': `<div class="news-bias nb-bull">↑ ${cur} OVERALL BIAS: BULLISH</div>`,
+    'Bearish': `<div class="news-bias nb-bear">↓ ${cur} OVERALL BIAS: BEARISH</div>`,
     'Mixed':   `<div class="news-bias nb-mix">~ ${cur} OVERALL BIAS: MIXED SIGNALS</div>`,
-    'Neutral': `<div class="news-bias nb-neu">→ ${cur} OVERALL BIAS: NEUTRAL — No directional data yet</div>`,
+    'Neutral': `<div class="news-bias nb-neu">→ ${cur} OVERALL BIAS: NEUTRAL</div>`,
   };
   return map[bias] || '';
 }
@@ -220,7 +220,7 @@ function makeNewsTable(events) {
       <td class="mono">${e.actual  || '—'}</td>
       <td class="mono">${e.forecast || '—'}</td>
       <td class="mono">${e.previous || '—'}</td>
-      <td>${dirBadge(e.direction)}</td>
+      <td>${dirBadge(e.direction, e.direction_basis)}</td>
     </tr>
   `).join('');
 
@@ -237,20 +237,33 @@ function makeNewsTable(events) {
 
 function impactClass(impact) {
   if (impact === 'High')    return 'imp-high';
+  if (impact === 'Medium')  return 'imp-med';
   if (impact === 'Holiday') return 'imp-hol';
   if (impact === 'Speech')  return 'imp-sp';
   return '';
 }
 
-function dirBadge(dir) {
+function dirBadge(dir, basis) {
+  if (basis === 'actual') {
+    // Confirmed: actual released value compared against forecast
+    const map = {
+      'Bullish': '<span class="dir dir-bull">↑ BULLISH</span>',
+      'Bearish': '<span class="dir dir-bear">↓ BEARISH</span>',
+      'Neutral': '<span class="dir dir-neu">→ NEUTRAL</span>',
+      'Watch':   '<span class="dir dir-watch">👁 WATCH</span>',
+      'Pending': '<span class="dir dir-pend">⏳ PENDING</span>',
+    };
+    return map[dir] || `<span class="dir dir-neu">${dir || '—'}</span>`;
+  }
+  // Forecast basis: direction derived from forecast vs previous (pre-release expectation)
   const map = {
-    'Bullish': '<span class="dir dir-bull">↑ BULLISH</span>',
-    'Bearish': '<span class="dir dir-bear">↓ BEARISH</span>',
-    'Neutral': '<span class="dir dir-neu">→ NEUTRAL</span>',
+    'Bullish': '<span class="dir dir-exp-bull">↑ EXPECTED</span>',
+    'Bearish': '<span class="dir dir-exp-bear">↓ EXPECTED</span>',
+    'Neutral': '<span class="dir dir-neu">→ IN LINE</span>',
     'Watch':   '<span class="dir dir-watch">👁 WATCH</span>',
     'Pending': '<span class="dir dir-pend">⏳ PENDING</span>',
   };
-  return map[dir] || `<span class="dir dir-neu">${dir || '—'}</span>`;
+  return map[dir] || `<span class="dir dir-pend">⏳ PENDING</span>`;
 }
 
 /* ── Filters ────────────────────────────────────────────────────────── */

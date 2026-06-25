@@ -409,15 +409,19 @@ body {
 .news-tbl tr:hover td { background: rgba(0,212,255,.04); }
 
 .imp-high { color: var(--dn);  font-weight: 700; }
-.imp-hol  { color: var(--rng); font-weight: 600; }
+.imp-med  { color: var(--rng); font-weight: 600; }
+.imp-hol  { color: var(--sec); font-weight: 600; }
 .imp-sp   { color: var(--pri); font-weight: 600; }
 
 .dir { font-size: 12px; font-weight: 700; letter-spacing: .5px; }
-.dir-bull { color: var(--up); }
-.dir-bear { color: var(--dn); }
-.dir-neu  { color: var(--txt2); }
-.dir-watch { color: var(--pri); }
-.dir-pend  { color: var(--rng); }
+.dir-bull     { color: var(--up); }
+.dir-bear     { color: var(--dn); }
+.dir-neu      { color: var(--txt2); }
+.dir-watch    { color: var(--pri); }
+.dir-pend     { color: var(--rng); }
+/* Dimmed variants: direction derived from forecast vs previous, not confirmed actual */
+.dir-exp-bull { color: #00a854; }
+.dir-exp-bear { color: #a81830; }
 
 .mono { font-family: 'Share Tech Mono', monospace; }
 

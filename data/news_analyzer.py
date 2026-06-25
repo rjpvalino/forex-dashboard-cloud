@@ -17,7 +17,10 @@ class NewsAnalyzer:
             currency = event.get('currency', '').upper().strip()
             if not currency or len(currency) != 3:
                 continue
+            actual = self._parse_num(event.get('actual', ''))
             event['direction'] = self._direction(event)
+            # 'actual' = confirmed result available; 'forecast' = using forecast vs previous
+            event['direction_basis'] = 'actual' if actual is not None else 'forecast'
             by_currency.setdefault(currency, []).append(event)
 
         # Attach overall bias per currency
