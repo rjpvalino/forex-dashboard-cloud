@@ -53,7 +53,6 @@ function renderAll(data) {
   renderTable('major', data.pairs.filter(p => (data.major_pairs || []).includes(p.display)), data.news);
   renderTable('minor', data.pairs.filter(p => (data.minor_pairs || []).includes(p.display)), data.news);
   renderNews(data.news);
-  updateStats(data.pairs, data.major_pairs, data.minor_pairs);
   applyFilters();
 }
 
@@ -266,7 +265,7 @@ function applyFilters() {
   if (!_data) return;
   const { type, trend, agreement, strength, currency, change, news } = filters;
 
-  let shown = 0;
+  let shown = 0, up = 0, dn = 0, rng = 0, conf = 0, shownMajor = 0, shownMinor = 0;
   document.querySelectorAll('.ptbl tbody tr').forEach(tr => {
     const isMajor = (_data.major_pairs || []).includes(tr.dataset.type);
     const isMinor = (_data.minor_pairs || []).includes(tr.dataset.type);
@@ -281,7 +280,15 @@ function applyFilters() {
       || tr.dataset.newsImpact === news;
     const hide = !(passType && passTrend && passAgr && passStrength && passCurrency && passChange && passNews);
     tr.classList.toggle('filtered-out', hide);
-    if (!hide) shown++;
+    if (!hide) {
+      shown++;
+      if (tr.dataset.dailyTrend === 'up')      up++;
+      if (tr.dataset.dailyTrend === 'down')    dn++;
+      if (tr.dataset.dailyTrend === 'ranging') rng++;
+      if (tr.dataset.agreement === 'yes')      conf++;
+      if (isMajor) shownMajor++;
+      if (isMinor) shownMinor++;
+    }
   });
 
   // Show/hide whole sections
@@ -293,27 +300,12 @@ function applyFilters() {
   else minorSection.style.display = '';
 
   document.getElementById('s-total').textContent = shown;
-}
-
-/* ── Stats Bar ──────────────────────────────────────────────────────── */
-function updateStats(pairs, majorPairs, minorPairs) {
-  let up = 0, dn = 0, rng = 0, conf = 0;
-  pairs.forEach(p => {
-    if (p.daily_trend === 'Trending Up')   up++;
-    if (p.daily_trend === 'Trending Down') dn++;
-    if (p.daily_trend === 'Ranging')       rng++;
-    if (p.agreement === 'Yes')             conf++;
-  });
-  document.getElementById('s-up').textContent   = up;
-  document.getElementById('s-dn').textContent   = dn;
-  document.getElementById('s-rng').textContent  = rng;
-  document.getElementById('s-conf').textContent = conf;
-  document.getElementById('s-total').textContent = pairs.length;
-
-  const mc = (majorPairs || []).filter(d => pairs.find(p => p.display === d)).length;
-  const nc = (minorPairs || []).filter(d => pairs.find(p => p.display === d)).length;
-  document.getElementById('cnt-major').textContent = `${mc} pair${mc !== 1 ? 's' : ''}`;
-  document.getElementById('cnt-minor').textContent = `${nc} pair${nc !== 1 ? 's' : ''}`;
+  document.getElementById('s-up').textContent    = up;
+  document.getElementById('s-dn').textContent    = dn;
+  document.getElementById('s-rng').textContent   = rng;
+  document.getElementById('s-conf').textContent  = conf;
+  document.getElementById('cnt-major').textContent = `${shownMajor} pair${shownMajor !== 1 ? 's' : ''}`;
+  document.getElementById('cnt-minor').textContent = `${shownMinor} pair${shownMinor !== 1 ? 's' : ''}`;
 }
 
 /* ── Helpers ────────────────────────────────────────────────────────── */

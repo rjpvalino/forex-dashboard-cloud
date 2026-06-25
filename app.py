@@ -76,7 +76,7 @@ def refresh_data():
         'last_updated': datetime.now(pytz.UTC).isoformat(),
         'error': error_msg
     })
-    logger.info(f"Refresh complete — {len(pairs_data)} pairs, {sum(len(v) for v in news.values())} news events")
+    logger.info(f"Refresh complete — {len(pairs_data)} pairs, {sum(len(v.get('events', [])) for v in news.values())} news events")
 
 
 @app.route('/')
@@ -108,7 +108,6 @@ def _demo_pairs():
     # Format: (instrument, bid, ask, daily_chg%, daily_trend, daily_strength, weekly_trend, weekly_strength)
     # Strength: 'Strong' (ADX>35) | 'Moderate' (25-35) | 'Weak' (20-25) | 'None' (<20 = Ranging)
     raw = [
-        # Format: (instrument, bid, ask, daily_chg%, daily_trend, daily_strength, weekly_trend, weekly_strength)
         # Major pairs — approximate Jun 2026 market conditions
         ('EUR_USD', 1.14256, 1.14272, -0.390, 'Trending Down', 'Moderate', 'Ranging',        'None'),
         ('GBP_USD', 1.27143, 1.27161, -0.265, 'Trending Down', 'Weak',     'Ranging',        'None'),
