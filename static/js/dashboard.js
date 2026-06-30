@@ -15,6 +15,7 @@ async function initDashboard() {
   } finally {
     hideLoader();
   }
+  setInterval(fetchData, 60 * 60 * 1000);
 }
 
 async function fetchData() {

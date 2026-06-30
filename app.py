@@ -233,7 +233,7 @@ def _demo_news():
 
 central = pytz.timezone('America/Chicago')
 _scheduler = BackgroundScheduler(timezone=central)
-_scheduler.add_job(refresh_data, CronTrigger(hour=6, minute=0, timezone=central))
+_scheduler.add_job(refresh_data, 'interval', minutes=60)
 _scheduler.start()
 atexit.register(_scheduler.shutdown)
 
